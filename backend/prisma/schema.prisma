@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserPlan {
+  FREE
+  PREMIUM
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+model YouTubeVideo {
+  id               String   @id @default(uuid())
+  videoUrl         String
+  videoId          String
+  title            String?
+  transcript       String?  @db.Text
+  summary          String?  @db.Text
+  processingMethod String?  // "transcript_api", "gemini", or "whisper"
+  userId           String
+  jobId            String?  @unique
+  createdAt        DateTime @default(now())
+  usage            TranslationUsage?
+  jobs             ProcessingJob[]
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceJob        ProcessingJob? @relation("JobResultVideo", fields: [jobId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("youtube_videos")
+}
+
+model ProcessingJob {
+  id            String   @id @default(uuid())
+  videoUrl      String
+  videoId       String
+  language      String   @default("auto")
+  status        String
+  progress      Float    @default(0)
+  currentChunk  Int?
+  totalChunks   Int?
+  partialSummary   String?  @db.Text
+  partialTranscript String? @db.Text
+  userId        String
+  attempts      Int      @default(0)
+  maxAttempts   Int      @default(1)
+  error         String?  @db.Text
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  videoRecordId String?
+  transcriptCharacters Int @default(0)
+  summaryCharacters    Int @default(0)
+  transcriptionInputTokens  Int @default(0)
+  transcriptionOutputTokens Int @default(0)
+  summaryInputTokens        Int @default(0)
+  summaryOutputTokens       Int @default(0)
+  totalTokens              Int @default(0)
+  estimatedCostUsd         Float @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  video YouTubeVideo? @relation(fields: [videoRecordId], references: [id])
+  resultVideo YouTubeVideo? @relation("JobResultVideo")
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usage TranslationUsage?
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@map("processing_jobs")
+}
+
+model User {
+  id                    String            @id @default(uuid())
+  email                 String            @unique
+  passwordHash          String?
+  googleId              String?           @unique
+  name                  String?
+  avatarUrl             String?
+  role                  UserRole          @default(USER)
+  plan                  UserPlan          @default(FREE)
+  dailyTranslationLimit Int               @default(1)
+  tokenBalance          Int               @default(0)
+  tokenCap              Int               @default(100000)
+  isRestricted          Boolean           @default(false)
+  lastLoginAt           DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  jobs                  ProcessingJob[]
+  loginActivities       LoginActivity[]
+  usage                 TranslationUsage[]
+  videos                YouTubeVideo[]
+
+  @@index([role])
+  @@index([plan])
+  @@map("users")
+}
+
+model LoginActivity {
+  id          String       @id @default(uuid())
+  userId      String
+  provider    AuthProvider
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("login_activities")
+}
+
+model TranslationUsage {
+  id                        String   @id @default(uuid())
+  userId                    String
+  jobId                     String   @unique
+  videoId                   String?  @unique
+  requestDate               DateTime @default(now())
+  translationCount          Int      @default(1)
+  transcriptCharacters      Int      @default(0)
+  summaryCharacters         Int      @default(0)
+  transcriptionInputTokens  Int      @default(0)
+  transcriptionOutputTokens Int      @default(0)
+  summaryInputTokens        Int      @default(0)
+  summaryOutputTokens       Int      @default(0)
+  totalTokens               Int      @default(0)
+  estimatedCostUsd          Float    @default(0)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  job                       ProcessingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user                      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video                     YouTubeVideo? @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  @@index([userId, requestDate])
+  @@index([createdAt])
+  @@map("translation_usage")
+}

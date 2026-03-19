@@ -166,6 +166,11 @@ h3 {
   padding: 2rem clamp(1rem, 2.4vw, 2rem) 3rem;
 }
 
+.landing-screen {
+  min-height: 100vh;
+  width: 100%;
+}
+
 @media (min-width: 1680px) {
   .auth-shell,
   .app-shell {
@@ -308,6 +313,92 @@ h3 {
   align-items: center;
 }
 
+.landing-hero {
+  position: relative;
+  min-height: 100vh;
+  padding: 1.4rem 1.8rem 2rem;
+  border-radius: 0;
+  border: 0;
+  background:
+    radial-gradient(circle at 22% 18%, rgba(129, 164, 255, 0.12), transparent 24%),
+    radial-gradient(circle at 82% 16%, rgba(200, 255, 107, 0.08), transparent 18%),
+    linear-gradient(180deg, #0a1321 0%, #08111f 100%);
+  overflow: hidden;
+}
+
+.landing-nav {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.landing-brand {
+  display: flex;
+  align-items: center;
+}
+
+.landing-nav-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem;
+  border: 1px solid rgba(168, 189, 214, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.landing-nav-pill {
+  padding: 0.48rem 0.82rem;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  background: transparent;
+  border: 0;
+}
+
+.landing-nav-pill-active {
+  background: rgba(129, 164, 255, 0.12);
+  color: var(--text);
+}
+
+.landing-nav-cta {
+  min-width: 84px;
+  border-radius: 999px;
+}
+
+.landing-hero-body {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 8rem);
+  padding: 3rem 0 5rem;
+}
+
+.landing-copy-block {
+  width: min(980px, 100%);
+  text-align: center;
+  display: grid;
+  gap: 1.1rem;
+  justify-items: center;
+}
+
+.landing-copy-block .eyebrow {
+  margin-bottom: 0;
+}
+
+.landing-copy-block h1 {
+  max-width: 18ch;
+  margin: 0 auto;
+  white-space: normal;
+  font-size: clamp(2rem, 3.8vw, 3.2rem);
+  line-height: 0.98;
+  letter-spacing: -0.08em;
+}
+
 .auth-intro,
 .auth-card,
 .card,
@@ -406,8 +497,9 @@ h3 {
 
 .landing-copy {
   color: var(--muted);
-  max-width: 52ch;
-  font-size: 0.96rem;
+  max-width: 40rem;
+  font-size: 1rem;
+  margin: 0 auto;
 }
 
 .landing-form {
@@ -415,15 +507,81 @@ h3 {
   gap: 0.8rem;
 }
 
+.landing-form-hero {
+  width: min(920px, 100%);
+  margin: 0 auto;
+}
+
 .landing-form-row {
   display: grid;
-  grid-template-columns: 180px auto;
+  grid-template-columns: 220px auto;
   gap: 0.75rem;
+}
+
+.landing-form-row-single {
+  grid-template-columns: minmax(0, 1fr) 240px 60px;
+  align-items: center;
 }
 
 .landing-note {
   color: var(--muted);
   font-size: 0.82rem;
+  text-align: center;
+}
+
+.landing-section {
+  width: min(980px, 100%);
+  margin-top: 1rem;
+}
+
+.landing-section-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(168, 189, 214, 0.08);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.landing-coming-soon {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  text-align: center;
+  padding: 1.6rem 1rem;
+}
+
+.landing-cta-row {
+  display: flex;
+  justify-content: center;
+}
+
+.landing-secondary-cta {
+  border-radius: 999px;
+  min-width: 100px;
+}
+
+.landing-auth-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(4, 8, 18, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.landing-auth-modal {
+  width: min(420px, 100%);
+  background: rgba(10, 17, 28, 0.94);
+  border-color: rgba(168, 189, 214, 0.14);
+}
+
+.landing-auth-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .auth-heading {
@@ -1107,10 +1265,6 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 
-  .auth-panel-landing {
-    grid-template-columns: 1fr;
-  }
-
   .sidebar {
     position: static;
     min-height: auto;
@@ -1122,6 +1276,10 @@ tbody tr:hover td {
   .app-shell {
     width: min(100%, calc(100% - 1rem));
     padding-top: 0.75rem;
+  }
+
+  .landing-hero {
+    padding: 1rem 1rem 1.5rem;
   }
 
   .auth-intro,
@@ -1140,6 +1298,29 @@ tbody tr:hover td {
   }
 
   .landing-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .landing-nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .landing-copy-block h1 {
+    font-size: clamp(2.1rem, 8vw, 3rem);
+  }
+
+  .landing-form-hero {
+    width: 100%;
+  }
+
+  .landing-form-row-single {
     grid-template-columns: 1fr;
   }
 

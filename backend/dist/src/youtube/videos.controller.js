@@ -24,6 +24,7 @@ const processing_queue_service_1 = require("./processing-queue.service");
 const pdfkit_1 = __importDefault(require("pdfkit"));
 const docx_1 = require("docx");
 const current_user_decorator_1 = require("../auth/current-user.decorator");
+const public_decorator_1 = require("../auth/public.decorator");
 let VideosController = class VideosController {
     youtubeService;
     eventEmitter;
@@ -41,6 +42,9 @@ let VideosController = class VideosController {
     }
     async findAll(user, page, limit) {
         return this.youtubeService.findAll(user, page, limit);
+    }
+    async findLatest(limit) {
+        return this.youtubeService.findLatestPublic(limit);
     }
     async status(jobId, user) {
         const job = await this.processingQueue.getJobForUser(jobId, user);
@@ -185,6 +189,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, Number]),
     __metadata("design:returntype", Promise)
 ], VideosController.prototype, "findAll", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('latest'),
+    __param(0, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(5), common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], VideosController.prototype, "findLatest", null);
 __decorate([
     (0, common_1.Sse)('process/status/:jobId'),
     __param(0, (0, common_1.Param)('jobId')),

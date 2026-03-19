@@ -24,6 +24,8 @@ import type {
   Video,
 } from './types/app';
 
+type LandingSection = 'summaries' | 'pricing';
+
 function App() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
@@ -31,6 +33,10 @@ function App() {
   const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
   const [activePanel, setActivePanel] = useState<AppPanel>('workspace');
   const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [landingSection, setLandingSection] = useState<LandingSection>('summaries');
+  const [latestSummaries, setLatestSummaries] = useState<Video[]>([]);
+  const [latestSummariesLoading, setLatestSummariesLoading] = useState(false);
   const [authForm, setAuthForm] = useState<AuthFormState>({ name: '', email: '', password: '' });
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -86,6 +92,14 @@ function App() {
   }, [token]);
 
   useEffect(() => {
+    if (token) {
+      return;
+    }
+
+    void fetchLatestSummaries();
+  }, [token]);
+
+  useEffect(() => {
     if (!token || !account) {
       return;
     }
@@ -112,6 +126,7 @@ function App() {
       usage: payload.usage,
       premiumUpgradeRequest: payload.premiumUpgradeRequest,
     });
+    setIsAuthOpen(false);
     setAuthError(null);
     setAuthForm({ name: '', email: '', password: '' });
   };
@@ -192,6 +207,20 @@ function App() {
     }
   };
 
+  const fetchLatestSummaries = async () => {
+    try {
+      setLatestSummariesLoading(true);
+      const response = await axios.get<Video[]>(`${API_BASE}/videos/latest`, {
+        params: { limit: 5 },
+      });
+      setLatestSummaries(response.data);
+    } catch (err) {
+      console.error('Failed to fetch latest summaries', err);
+    } finally {
+      setLatestSummariesLoading(false);
+    }
+  };
+
   const handleAuthSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setAuthLoading(true);
@@ -224,12 +253,25 @@ function App() {
   const handleGuestProcess = (event: FormEvent) => {
     event.preventDefault();
     if (!url.trim()) {
+      setIsAuthOpen(false);
       setAuthError('Paste a YouTube link first.');
       return;
     }
 
     setAuthMode('login');
+    setIsAuthOpen(true);
     setAuthError('Login to continue processing this link.');
+  };
+
+  const openAuth = (mode: AuthMode) => {
+    setAuthMode(mode);
+    setIsAuthOpen(true);
+    setAuthError(null);
+  };
+
+  const closeAuth = () => {
+    setIsAuthOpen(false);
+    setAuthError(null);
   };
 
   const handleProcess = async (event: FormEvent) => {
@@ -407,10 +449,17 @@ function App() {
         authForm={authForm}
         authLoading={authLoading}
         authError={authError}
+        authOpen={isAuthOpen}
+        landingSection={landingSection}
+        latestSummaries={latestSummaries}
+        latestSummariesLoading={latestSummariesLoading}
         onUrlChange={setUrl}
         onLanguageChange={setLanguage}
         onAuthModeChange={setAuthMode}
         onAuthFormChange={setAuthForm}
+        onOpenAuth={openAuth}
+        onCloseAuth={closeAuth}
+        onLandingSectionChange={setLandingSection}
         onGuestProcess={handleGuestProcess}
         onAuthSubmit={handleAuthSubmit}
         onGoogleLogin={handleGoogleLogin}

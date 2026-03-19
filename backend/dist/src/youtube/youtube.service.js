@@ -276,6 +276,17 @@ let YoutubeService = YoutubeService_1 = class YoutubeService {
             totalPages: Math.ceil(total / limit),
         };
     }
+    async findLatestPublic(limit = 5) {
+        return this.prismaService.youTubeVideo.findMany({
+            where: {
+                summary: {
+                    not: '',
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: Math.max(1, Math.min(limit, 10)),
+        });
+    }
     async findById(id, user) {
         const video = await this.prismaService.youTubeVideo.findUnique({
             where: { id },

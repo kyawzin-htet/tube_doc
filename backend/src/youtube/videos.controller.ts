@@ -8,6 +8,7 @@ import PDFDocument from 'pdfkit';
 import { Document, Packer, Paragraph, HeadingLevel } from 'docx';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { Public } from '../auth/public.decorator';
 
 @Controller('api/videos')
 export class VideosController {
@@ -36,6 +37,12 @@ export class VideosController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     return this.youtubeService.findAll(user, page, limit);
+  }
+
+  @Public()
+  @Get('latest')
+  async findLatest(@Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number) {
+    return this.youtubeService.findLatestPublic(limit);
   }
 
   @Sse('process/status/:jobId')

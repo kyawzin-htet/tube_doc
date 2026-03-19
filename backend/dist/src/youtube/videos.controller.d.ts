@@ -32,6 +32,18 @@ export declare class VideosController {
         limit: number;
         totalPages: number;
     }>;
+    findLatest(limit: number): Promise<{
+        id: string;
+        createdAt: Date;
+        userId: string;
+        videoUrl: string;
+        videoId: string;
+        title: string | null;
+        transcript: string | null;
+        summary: string | null;
+        processingMethod: string | null;
+        jobId: string | null;
+    }[]>;
     status(jobId: string, user: AuthenticatedUser): Promise<Observable<MessageEvent>>;
     remove(id: string, user: AuthenticatedUser): Promise<{
         id: string;

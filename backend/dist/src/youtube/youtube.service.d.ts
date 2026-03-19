@@ -65,6 +65,18 @@ export declare class YoutubeService {
         limit: number;
         totalPages: number;
     }>;
+    findLatestPublic(limit?: number): Promise<{
+        id: string;
+        createdAt: Date;
+        userId: string;
+        videoUrl: string;
+        videoId: string;
+        title: string | null;
+        transcript: string | null;
+        summary: string | null;
+        processingMethod: string | null;
+        jobId: string | null;
+    }[]>;
     findById(id: string, user: AuthenticatedUser): Promise<{
         id: string;
         createdAt: Date;

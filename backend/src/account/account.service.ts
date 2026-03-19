@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UserPlan, type User } from '@prisma/client';
+import { UpgradeRequestStatus, UserPlan, type PremiumUpgradeRequest, type User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const FREE_DAILY_LIMIT = 1;
@@ -83,6 +83,10 @@ export class AccountService {
         orderBy: { createdAt: 'desc' },
       }),
     ]);
+    const latestUpgradeRequest = await this.prisma.premiumUpgradeRequest.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+    });
 
     return {
       user: this.serializeUser(user),
@@ -106,10 +110,43 @@ export class AccountService {
           video: entry.video,
         })),
       },
+      premiumUpgradeRequest: this.serializeUpgradeRequest(latestUpgradeRequest),
     };
   }
 
-  async upgradeToPremium(userId: string) {
+  async requestPremiumUpgrade(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.plan === UserPlan.PREMIUM) {
+      throw new BadRequestException('This account is already on Premium');
+    }
+
+    const existingPending = await this.prisma.premiumUpgradeRequest.findFirst({
+      where: {
+        userId,
+        status: UpgradeRequestStatus.PENDING,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existingPending) {
+      return this.getAccountSummary(userId);
+    }
+
+    await this.prisma.premiumUpgradeRequest.create({
+      data: {
+        userId,
+        status: UpgradeRequestStatus.PENDING,
+        requestedPlan: UserPlan.PREMIUM,
+      },
+    });
+
+    return this.getAccountSummary(userId);
+  }
+
+  async applyPremiumUpgrade(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -126,6 +163,69 @@ export class AccountService {
     });
 
     return this.getAccountSummary(updated.id);
+  }
+
+  async approvePremiumUpgradeRequest(requestId: string, reviewedById: string) {
+    const request = await this.prisma.premiumUpgradeRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) {
+      throw new NotFoundException('Upgrade request not found');
+    }
+    if (request.status !== UpgradeRequestStatus.PENDING) {
+      throw new BadRequestException('Only pending upgrade requests can be approved');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: request.userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          plan: UserPlan.PREMIUM,
+          dailyTranslationLimit: Math.max(user.dailyTranslationLimit, PREMIUM_DAILY_LIMIT),
+          tokenBalance: Math.max(user.tokenBalance, PREMIUM_STARTING_TOKENS),
+          tokenCap: Math.max(user.tokenCap, PREMIUM_TOKEN_CAP),
+        },
+      });
+
+      await tx.premiumUpgradeRequest.update({
+        where: { id: requestId },
+        data: {
+          status: UpgradeRequestStatus.APPROVED,
+          reviewedById,
+          reviewedAt: new Date(),
+        },
+      });
+    });
+
+    return this.getAccountSummary(request.userId);
+  }
+
+  async cancelPremiumUpgradeRequest(requestId: string, reviewedById: string) {
+    const request = await this.prisma.premiumUpgradeRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) {
+      throw new NotFoundException('Upgrade request not found');
+    }
+    if (request.status !== UpgradeRequestStatus.PENDING) {
+      throw new BadRequestException('Only pending upgrade requests can be canceled');
+    }
+
+    await this.prisma.premiumUpgradeRequest.update({
+      where: { id: requestId },
+      data: {
+        status: UpgradeRequestStatus.CANCELED,
+        reviewedById,
+        reviewedAt: new Date(),
+      },
+    });
+
+    return this.getAccountSummary(request.userId);
   }
 
   async deductTokens(userId: string, totalTokens: number) {
@@ -268,6 +368,21 @@ export class AccountService {
       isRestricted: user.isRestricted,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,
+    };
+  }
+
+  serializeUpgradeRequest(request: PremiumUpgradeRequest | null | undefined) {
+    if (!request) {
+      return null;
+    }
+
+    return {
+      id: request.id,
+      status: request.status,
+      requestedPlan: request.requestedPlan,
+      createdAt: request.createdAt,
+      reviewedAt: request.reviewedAt,
+      reviewedById: request.reviewedById,
     };
   }
 }

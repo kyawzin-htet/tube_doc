@@ -1,0 +1,18 @@
+export const LANGUAGE_OPTIONS = [
+  { value: 'auto', label: 'Auto Detect' },
+  { value: 'en', label: 'English' },
+  { value: 'my', label: 'Burmese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'th', label: 'Thai' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'id', label: 'Indonesian' },
+  { value: 'vi', label: 'Vietnamese' },
+] as const;

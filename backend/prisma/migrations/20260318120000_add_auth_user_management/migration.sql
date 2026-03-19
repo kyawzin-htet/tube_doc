@@ -75,7 +75,8 @@ INSERT INTO "users" (
     "isRestricted",
     "createdAt",
     "updatedAt"
-) VALUES (
+)
+SELECT
     '00000000-0000-0000-0000-000000000001',
     'legacy@tubedoc.local',
     'Legacy Data',
@@ -87,7 +88,11 @@ INSERT INTO "users" (
     false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-) ON CONFLICT ("email") DO NOTHING;
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM "users"
+    WHERE "email" = 'legacy@tubedoc.local'
+);
 
 -- AlterTable
 ALTER TABLE "youtube_videos"

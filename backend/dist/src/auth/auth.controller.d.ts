@@ -45,6 +45,14 @@ export declare class AuthController {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
         accessToken: string;
     }>;
     login(body: Record<string, unknown>, req: Request): Promise<{
@@ -87,6 +95,14 @@ export declare class AuthController {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
         accessToken: string;
     }>;
     googleStart(origin: string | undefined, res: Response): void;

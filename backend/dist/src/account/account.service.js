@@ -82,6 +82,10 @@ let AccountService = class AccountService {
                 orderBy: { createdAt: 'desc' },
             }),
         ]);
+        const latestUpgradeRequest = await this.prisma.premiumUpgradeRequest.findFirst({
+            where: { userId: user.id },
+            orderBy: { createdAt: 'desc' },
+        });
         return {
             user: this.serializeUser(user),
             usage: {
@@ -104,9 +108,37 @@ let AccountService = class AccountService {
                     video: entry.video,
                 })),
             },
+            premiumUpgradeRequest: this.serializeUpgradeRequest(latestUpgradeRequest),
         };
     }
-    async upgradeToPremium(userId) {
+    async requestPremiumUpgrade(userId) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        if (user.plan === client_1.UserPlan.PREMIUM) {
+            throw new common_1.BadRequestException('This account is already on Premium');
+        }
+        const existingPending = await this.prisma.premiumUpgradeRequest.findFirst({
+            where: {
+                userId,
+                status: client_1.UpgradeRequestStatus.PENDING,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (existingPending) {
+            return this.getAccountSummary(userId);
+        }
+        await this.prisma.premiumUpgradeRequest.create({
+            data: {
+                userId,
+                status: client_1.UpgradeRequestStatus.PENDING,
+                requestedPlan: client_1.UserPlan.PREMIUM,
+            },
+        });
+        return this.getAccountSummary(userId);
+    }
+    async applyPremiumUpgrade(userId) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             throw new common_1.NotFoundException('User not found');
@@ -121,6 +153,61 @@ let AccountService = class AccountService {
             },
         });
         return this.getAccountSummary(updated.id);
+    }
+    async approvePremiumUpgradeRequest(requestId, reviewedById) {
+        const request = await this.prisma.premiumUpgradeRequest.findUnique({
+            where: { id: requestId },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Upgrade request not found');
+        }
+        if (request.status !== client_1.UpgradeRequestStatus.PENDING) {
+            throw new common_1.BadRequestException('Only pending upgrade requests can be approved');
+        }
+        await this.prisma.$transaction(async (tx) => {
+            const user = await tx.user.findUnique({ where: { id: request.userId } });
+            if (!user) {
+                throw new common_1.NotFoundException('User not found');
+            }
+            await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    plan: client_1.UserPlan.PREMIUM,
+                    dailyTranslationLimit: Math.max(user.dailyTranslationLimit, PREMIUM_DAILY_LIMIT),
+                    tokenBalance: Math.max(user.tokenBalance, PREMIUM_STARTING_TOKENS),
+                    tokenCap: Math.max(user.tokenCap, PREMIUM_TOKEN_CAP),
+                },
+            });
+            await tx.premiumUpgradeRequest.update({
+                where: { id: requestId },
+                data: {
+                    status: client_1.UpgradeRequestStatus.APPROVED,
+                    reviewedById,
+                    reviewedAt: new Date(),
+                },
+            });
+        });
+        return this.getAccountSummary(request.userId);
+    }
+    async cancelPremiumUpgradeRequest(requestId, reviewedById) {
+        const request = await this.prisma.premiumUpgradeRequest.findUnique({
+            where: { id: requestId },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Upgrade request not found');
+        }
+        if (request.status !== client_1.UpgradeRequestStatus.PENDING) {
+            throw new common_1.BadRequestException('Only pending upgrade requests can be canceled');
+        }
+        await this.prisma.premiumUpgradeRequest.update({
+            where: { id: requestId },
+            data: {
+                status: client_1.UpgradeRequestStatus.CANCELED,
+                reviewedById,
+                reviewedAt: new Date(),
+            },
+        });
+        return this.getAccountSummary(request.userId);
     }
     async deductTokens(userId, totalTokens) {
         if (totalTokens <= 0) {
@@ -223,6 +310,19 @@ let AccountService = class AccountService {
             isRestricted: user.isRestricted,
             createdAt: user.createdAt,
             lastLoginAt: user.lastLoginAt,
+        };
+    }
+    serializeUpgradeRequest(request) {
+        if (!request) {
+            return null;
+        }
+        return {
+            id: request.id,
+            status: request.status,
+            requestedPlan: request.requestedPlan,
+            createdAt: request.createdAt,
+            reviewedAt: request.reviewedAt,
+            reviewedById: request.reviewedById,
         };
     }
 };

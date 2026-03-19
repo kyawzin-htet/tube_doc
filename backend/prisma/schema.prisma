@@ -21,6 +21,12 @@ enum AuthProvider {
   GOOGLE
 }
 
+enum UpgradeRequestStatus {
+  PENDING
+  APPROVED
+  CANCELED
+}
+
 model YouTubeVideo {
   id               String   @id @default(uuid())
   videoUrl         String
@@ -98,12 +104,31 @@ model User {
   updatedAt             DateTime          @updatedAt
   jobs                  ProcessingJob[]
   loginActivities       LoginActivity[]
+  premiumUpgradeRequests PremiumUpgradeRequest[] @relation("PremiumUpgradeRequester")
+  reviewedUpgradeRequests PremiumUpgradeRequest[] @relation("PremiumUpgradeReviewer")
   usage                 TranslationUsage[]
   videos                YouTubeVideo[]
 
   @@index([role])
   @@index([plan])
   @@map("users")
+}
+
+model PremiumUpgradeRequest {
+  id          String               @id @default(uuid())
+  userId      String
+  reviewedById String?
+  status      UpgradeRequestStatus @default(PENDING)
+  requestedPlan UserPlan           @default(PREMIUM)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  reviewedAt  DateTime?
+  user        User                 @relation("PremiumUpgradeRequester", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy  User?                @relation("PremiumUpgradeReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@map("premium_upgrade_requests")
 }
 
 model LoginActivity {

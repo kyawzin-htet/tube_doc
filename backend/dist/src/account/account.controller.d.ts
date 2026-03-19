@@ -43,8 +43,16 @@ export declare class AccountController {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
     }>;
-    upgrade(user: AuthenticatedUser): Promise<{
+    requestUpgrade(user: AuthenticatedUser): Promise<{
         user: {
             id: string;
             email: string;
@@ -84,5 +92,13 @@ export declare class AccountController {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
     }>;
 }

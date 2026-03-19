@@ -21,6 +21,7 @@ export declare class ProcessingQueueService {
         videoId: string;
         totalTokens: number;
         estimatedCostUsd: number;
+        status: string;
         transcriptCharacters: number;
         summaryCharacters: number;
         transcriptionInputTokens: number;
@@ -28,7 +29,6 @@ export declare class ProcessingQueueService {
         summaryInputTokens: number;
         summaryOutputTokens: number;
         progress: number;
-        status: string;
         finishedAt: Date | null;
         videoRecordId: string | null;
         language: string;

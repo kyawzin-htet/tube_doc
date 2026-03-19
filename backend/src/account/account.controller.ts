@@ -12,8 +12,8 @@ export class AccountController {
     return this.accountService.getAccountSummary(user.id);
   }
 
-  @Post('upgrade')
-  upgrade(@CurrentUser() user: AuthenticatedUser) {
-    return this.accountService.upgradeToPremium(user.id);
+  @Post('upgrade-request')
+  requestUpgrade(@CurrentUser() user: AuthenticatedUser) {
+    return this.accountService.requestPremiumUpgrade(user.id);
   }
 }

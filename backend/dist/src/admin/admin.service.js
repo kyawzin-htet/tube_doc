@@ -21,7 +21,7 @@ let AdminService = class AdminService {
         this.accountService = accountService;
     }
     async getOverview() {
-        const [totalUsers, recentLogins, usageTotals, users, dailyLogins, dailyUsage] = await Promise.all([
+        const [totalUsers, recentLogins, usageTotals, users, dailyLogins, dailyUsage, pendingUpgradeRequests] = await Promise.all([
             this.prisma.user.count(),
             this.prisma.loginActivity.findMany({
                 orderBy: { createdAt: 'desc' },
@@ -81,6 +81,23 @@ let AdminService = class AdminService {
                     createdAt: true,
                 },
             }),
+            this.prisma.premiumUpgradeRequest.findMany({
+                where: {
+                    status: 'PENDING',
+                },
+                orderBy: { createdAt: 'asc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            plan: true,
+                            role: true,
+                        },
+                    },
+                },
+            }),
         ]);
         return {
             totals: {
@@ -97,6 +114,13 @@ let AdminService = class AdminService {
                 ipAddress: entry.ipAddress,
                 userAgent: entry.userAgent,
                 user: entry.user,
+            })),
+            pendingUpgradeRequests: pendingUpgradeRequests.map((request) => ({
+                id: request.id,
+                status: request.status,
+                requestedPlan: request.requestedPlan,
+                createdAt: request.createdAt,
+                user: request.user,
             })),
             users: users.map((user) => ({
                 ...this.accountService.serializeUser(user),
@@ -126,6 +150,12 @@ let AdminService = class AdminService {
             updates.plan = body.plan;
         }
         return this.accountService.updateUserSettings(userId, updates);
+    }
+    async approveUpgradeRequest(requestId, reviewedById) {
+        return this.accountService.approvePremiumUpgradeRequest(requestId, reviewedById);
+    }
+    async cancelUpgradeRequest(requestId, reviewedById) {
+        return this.accountService.cancelPremiumUpgradeRequest(requestId, reviewedById);
     }
     buildDailyActiveUsers(dailyLogins, dailyUsage) {
         const map = new Map();

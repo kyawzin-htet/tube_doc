@@ -24,8 +24,8 @@ let AccountController = class AccountController {
     getMe(user) {
         return this.accountService.getAccountSummary(user.id);
     }
-    upgrade(user) {
-        return this.accountService.upgradeToPremium(user.id);
+    requestUpgrade(user) {
+        return this.accountService.requestPremiumUpgrade(user.id);
     }
 };
 exports.AccountController = AccountController;
@@ -37,12 +37,12 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AccountController.prototype, "getMe", null);
 __decorate([
-    (0, common_1.Post)('upgrade'),
+    (0, common_1.Post)('upgrade-request'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
-], AccountController.prototype, "upgrade", null);
+], AccountController.prototype, "requestUpgrade", null);
 exports.AccountController = AccountController = __decorate([
     (0, common_1.Controller)('api/account'),
     __metadata("design:paramtypes", [account_service_1.AccountService])

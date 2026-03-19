@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 const roles_decorator_1 = require("../auth/roles.decorator");
 const admin_service_1 = require("./admin.service");
 let AdminController = class AdminController {
@@ -27,6 +28,12 @@ let AdminController = class AdminController {
     }
     updateUser(id, body) {
         return this.adminService.updateUser(id, body);
+    }
+    approveUpgradeRequest(id, user) {
+        return this.adminService.approveUpgradeRequest(id, user.id);
+    }
+    cancelUpgradeRequest(id, user) {
+        return this.adminService.cancelUpgradeRequest(id, user.id);
     }
 };
 exports.AdminController = AdminController;
@@ -44,6 +51,22 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "updateUser", null);
+__decorate([
+    (0, common_1.Post)('upgrade-requests/:id/approve'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "approveUpgradeRequest", null);
+__decorate([
+    (0, common_1.Post)('upgrade-requests/:id/cancel'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "cancelUpgradeRequest", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('api/admin'),
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),

@@ -51,6 +51,14 @@ export declare class AuthService {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
         accessToken: string;
     }>;
     login(body: Record<string, unknown>, request: Request): Promise<{
@@ -93,6 +101,14 @@ export declare class AuthService {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
         accessToken: string;
     }>;
     handleGoogleCallback(code: string, state: string, request: Request): Promise<{
@@ -135,6 +151,14 @@ export declare class AuthService {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
         accessToken: string;
         origin: string;
     }>;
@@ -178,6 +202,14 @@ export declare class AuthService {
                 } | null;
             }[];
         };
+        premiumUpgradeRequest: {
+            id: string;
+            status: import("@prisma/client").$Enums.UpgradeRequestStatus;
+            requestedPlan: import("@prisma/client").$Enums.UserPlan;
+            createdAt: Date;
+            reviewedAt: Date | null;
+            reviewedById: string | null;
+        } | null;
         accessToken: string;
     }>;
     private recordLogin;

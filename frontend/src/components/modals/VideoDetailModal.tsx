@@ -6,29 +6,53 @@ import { authHeaders } from '../../lib/http';
 import type { Video } from '../../types/app';
 
 interface VideoDetailModalProps {
-  token: string;
+  token?: string | null;
   video: Video;
   onClose: () => void;
+  onRequireAuth?: () => void;
+  readOnly?: boolean;
 }
 
-export function VideoDetailModal({ token, video, onClose }: VideoDetailModalProps) {
+export function VideoDetailModal({
+  token,
+  video,
+  onClose,
+  onRequireAuth,
+  readOnly = false,
+}: VideoDetailModalProps) {
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [downloading, setDownloading] = useState<'pdf' | 'docx' | null>(null);
+  const actionsDisabled = (readOnly || !token) && !onRequireAuth;
 
   const processingLabel =
     video.processingMethod === 'transcript_api'
       ? 'Transcript API'
       : video.processingMethod === 'gemini'
         ? 'Gemini'
-        : 'Whisper';
+        : video.processingMethod === 'whisper'
+          ? 'Whisper'
+          : 'Summary';
 
   const handleCopy = () => {
+    if (!token && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
+
+    if (actionsDisabled) return;
     navigator.clipboard.writeText(video.summary);
     setCopiedSummary(true);
     setTimeout(() => setCopiedSummary(false), 2000);
   };
 
   const handleDownload = async (formatType: 'pdf' | 'docx') => {
+    if (!token && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
+
+    if (actionsDisabled || !token) return;
+
     try {
       setDownloading(formatType);
       const response = await axios.get(`${API_BASE}/videos/${video.id}/download`, {
@@ -41,7 +65,7 @@ export function VideoDetailModal({ token, video, onClose }: VideoDetailModalProp
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       const safeTitle = (video.title || video.videoId || 'summary')
-        .replace(/[^\w\-]+/g, '_')
+        .replace(/[^\w-]+/g, '_')
         .slice(0, 80);
       link.href = url;
       link.download = `${safeTitle}.${formatType}`;
@@ -65,6 +89,7 @@ export function VideoDetailModal({ token, video, onClose }: VideoDetailModalProp
             <h2>{video.title}</h2>
             <div className="modal-meta">
               <span className="badge subtle-badge">{processingLabel}</span>
+              {readOnly ? <span className="badge subtle-badge">View only</span> : null}
               <a className="detail-link" href={video.videoUrl} target="_blank" rel="noopener noreferrer">
                 View on YouTube <ExternalLink size={13} />
               </a>
@@ -82,26 +107,27 @@ export function VideoDetailModal({ token, video, onClose }: VideoDetailModalProp
               <button
                 className={`ghost-btn icon-btn ${copiedSummary ? 'success-outline' : ''}`}
                 onClick={handleCopy}
+                disabled={actionsDisabled}
                 aria-label={copiedSummary ? 'Copied' : 'Copy summary'}
-                title={copiedSummary ? 'Copied' : 'Copy summary'}
+                title={!token && onRequireAuth ? 'Login to copy' : actionsDisabled ? 'Copy is unavailable in view-only mode' : copiedSummary ? 'Copied' : 'Copy summary'}
               >
                 {copiedSummary ? <Check size={14} /> : <Copy size={14} />}
               </button>
               <button
                 className="ghost-btn icon-btn"
                 onClick={() => handleDownload('pdf')}
-                disabled={downloading !== null}
+                disabled={actionsDisabled || downloading !== null}
                 aria-label="Download PDF"
-                title="Download PDF"
+                title={!token && onRequireAuth ? 'Login to download' : actionsDisabled ? 'Download is unavailable in view-only mode' : 'Download PDF'}
               >
                 {downloading === 'pdf' ? <Loader2 className="spinning" size={14} /> : <Download size={14} />}
               </button>
               <button
                 className="ghost-btn icon-btn"
                 onClick={() => handleDownload('docx')}
-                disabled={downloading !== null}
+                disabled={actionsDisabled || downloading !== null}
                 aria-label="Download DOCX"
-                title="Download DOCX"
+                title={!token && onRequireAuth ? 'Login to download' : actionsDisabled ? 'Download is unavailable in view-only mode' : 'Download DOCX'}
               >
                 {downloading === 'docx' ? <Loader2 className="spinning" size={14} /> : <Save size={14} />}
               </button>

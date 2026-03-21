@@ -3,12 +3,12 @@ import type { AppPanel, PanelMeta } from '../types/app';
 export const PANEL_META: Record<AppPanel, PanelMeta> = {
   workspace: {
     eyebrow: 'Workspace',
-    title: 'Workspace',
+    title: '',
     description: '',
   },
   account: {
     eyebrow: 'Account',
-    title: 'Account',
+    title: '',
     description: '',
   },
   'admin-dashboard': {

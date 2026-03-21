@@ -54,7 +54,7 @@ export function AppSidebar({
             <strong>{currentUser.name || currentUser.email}</strong>
             <div className="profile-meta">
               <span className="badge">{currentUser.plan}</span>
-              <span className="badge muted-badge">{currentUser.role}</span>
+              {/* <span className="badge muted-badge">{currentUser.role}</span> */}
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import type { FormEvent } from 'react';
-import { AlertCircle, Loader2, LogIn, Send, UserPlus, X } from 'lucide-react';
+import { Send } from 'lucide-react';
+import { AuthModal } from '../../components/modals/AuthModal';
 import { LANGUAGE_OPTIONS } from '../../constants/languages';
 import type { AuthFormState, AuthMode, Video } from '../../types/app';
 
@@ -19,6 +20,7 @@ interface AuthScreenProps {
   latestSummariesLoading: boolean;
   onUrlChange: (value: string) => void;
   onLanguageChange: (value: string) => void;
+  onSelectSummary: (video: Video) => void;
   onAuthModeChange: (mode: AuthMode) => void;
   onAuthFormChange: (value: AuthFormState) => void;
   onOpenAuth: (mode: AuthMode) => void;
@@ -42,6 +44,7 @@ export function AuthScreen({
   latestSummariesLoading,
   onUrlChange,
   onLanguageChange,
+  onSelectSummary,
   onAuthModeChange,
   onAuthFormChange,
   onOpenAuth,
@@ -148,7 +151,7 @@ export function AuthScreen({
                           </tr>
                         ) : latestSummaries.length ? (
                           latestSummaries.map((item) => (
-                            <tr key={item.id}>
+                            <tr key={item.id} onClick={() => onSelectSummary(item)}>
                               <td>
                                 <div className="table-title">{item.title}</div>
                                 <div className="table-subtitle">{item.videoId}</div>
@@ -179,95 +182,18 @@ export function AuthScreen({
             </section>
           </div>
         </div>
-        {authOpen && (
-          <div className="landing-auth-overlay" onClick={onCloseAuth}>
-            <aside className="auth-card landing-auth-modal" onClick={(event) => event.stopPropagation()}>
-              <div className="landing-auth-header">
-                <div className="auth-heading">
-                  <span className="eyebrow">Continue</span>
-                  <h1>{authMode === 'login' ? 'Login' : 'Create account'}</h1>
-                  <p>
-                    {authMode === 'login'
-                      ? 'Access your workspace.'
-                      : 'Create a new account to continue.'}
-                  </p>
-                </div>
-                <button className="ghost-btn icon-btn" onClick={onCloseAuth} aria-label="Close login" title="Close login">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="auth-tabs">
-                <button
-                  className={authMode === 'login' ? 'tab-active' : 'tab-idle'}
-                  onClick={() => onAuthModeChange('login')}
-                >
-                  Login
-                </button>
-                <button
-                  className={authMode === 'signup' ? 'tab-active' : 'tab-idle'}
-                  onClick={() => onAuthModeChange('signup')}
-                >
-                  Sign Up
-                </button>
-              </div>
-
-              <form className="auth-form" onSubmit={onAuthSubmit}>
-                {authMode === 'signup' && (
-                  <input
-                    type="text"
-                    placeholder="Full name"
-                    value={authForm.name}
-                    onChange={(event) => onAuthFormChange({ ...authForm, name: event.target.value })}
-                  />
-                )}
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={authForm.email}
-                  onChange={(event) => onAuthFormChange({ ...authForm, email: event.target.value })}
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={authForm.password}
-                  onChange={(event) => onAuthFormChange({ ...authForm, password: event.target.value })}
-                />
-
-                {authError && (
-                  <div className="inline-error">
-                    <AlertCircle size={16} />
-                    <span>{authError}</span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="primary-btn icon-btn"
-                  disabled={authLoading}
-                  aria-label={authMode === 'login' ? 'Login' : 'Create account'}
-                  title={authMode === 'login' ? 'Login' : 'Create account'}
-                >
-                  {authLoading ? (
-                    <Loader2 className="spinning" size={16} />
-                  ) : authMode === 'login' ? (
-                    <LogIn size={16} />
-                  ) : (
-                    <UserPlus size={16} />
-                  )}
-                </button>
-              </form>
-
-              <div className="divider">
-                <span>or</span>
-              </div>
-
-              <button className="ghost-btn full-width" onClick={onGoogleLogin}>
-                Continue with Google
-              </button>
-            </aside>
-          </div>
-        )}
+        <AuthModal
+          isOpen={authOpen}
+          mode={authMode}
+          form={authForm}
+          loading={authLoading}
+          error={authError}
+          onClose={onCloseAuth}
+          onModeChange={onAuthModeChange}
+          onFormChange={onAuthFormChange}
+          onSubmit={onAuthSubmit}
+          onGoogleLogin={onGoogleLogin}
+        />
       </section>
     </div>
   );

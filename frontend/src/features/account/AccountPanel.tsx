@@ -61,8 +61,8 @@ export function AccountPanel({
       ) : currentUser.plan === 'FREE' && premiumUpgradeRequest ? (
         <div className="status-box top-space">
           <div className="status-message">
-            <Loader2 className="spinning" size={16} />
-            <span>
+            {/* <Loader2 className="spinning" size={16} /> */}
+            <span className="text-warning">
               Premium request pending since{' '}
               {format(new Date(premiumUpgradeRequest.createdAt), 'MMM d, HH:mm')}
             </span>

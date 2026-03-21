@@ -48,6 +48,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
@@ -61,6 +62,17 @@ function App() {
   const hasPartialSummary = Boolean(currentStatus?.data?.partialSummary?.trim());
   const canUseAdmin = user?.role === 'ADMIN';
   const hasPendingUpgradeRequest = premiumUpgradeRequest?.status === 'PENDING';
+
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    if (axios.isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      if (typeof message === 'string' && message.trim()) {
+        return message;
+      }
+    }
+
+    return fallback;
+  };
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -138,6 +150,8 @@ function App() {
     setAdminOverview(null);
     setCurrentStatus(null);
     setError(null);
+    setSelectedVideo(null);
+    setIsLogoutConfirmOpen(false);
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
@@ -147,8 +161,8 @@ function App() {
   const withAuthErrorHandling = async <T,>(task: Promise<T>) => {
     try {
       return await task;
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
         clearAuth();
       }
       throw err;
@@ -165,8 +179,8 @@ function App() {
         }),
       );
       setAccount(response.data);
-    } catch (err: any) {
-      setAuthError(err.response?.data?.message || 'Failed to load account');
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, 'Failed to load account'));
     }
   };
 
@@ -230,8 +244,8 @@ function App() {
       const endpoint = authMode === 'login' ? 'login' : 'signup';
       const response = await axios.post<AuthResponse>(`${API_BASE}/auth/${endpoint}`, authForm);
       applyAuth(response.data);
-    } catch (err: any) {
-      setAuthError(err.response?.data?.message || 'Authentication failed');
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, 'Authentication failed'));
     } finally {
       setAuthLoading(false);
     }
@@ -336,9 +350,9 @@ function App() {
         setIsProcessing(false);
         setError('Connection lost while streaming status updates.');
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsProcessing(false);
-      setError(err.response?.data?.message || 'Failed to start processing');
+      setError(getErrorMessage(err, 'Failed to start processing'));
     }
   };
 
@@ -440,30 +454,50 @@ function App() {
     await refreshAccount(token);
   };
 
+  const handleLogout = () => {
+    clearAuth();
+  };
+
   if (!token || !account) {
     return (
-      <AuthScreen
-        url={url}
-        language={language}
-        authMode={authMode}
-        authForm={authForm}
-        authLoading={authLoading}
-        authError={authError}
-        authOpen={isAuthOpen}
-        landingSection={landingSection}
-        latestSummaries={latestSummaries}
-        latestSummariesLoading={latestSummariesLoading}
-        onUrlChange={setUrl}
-        onLanguageChange={setLanguage}
-        onAuthModeChange={setAuthMode}
-        onAuthFormChange={setAuthForm}
-        onOpenAuth={openAuth}
-        onCloseAuth={closeAuth}
-        onLandingSectionChange={setLandingSection}
-        onGuestProcess={handleGuestProcess}
-        onAuthSubmit={handleAuthSubmit}
-        onGoogleLogin={handleGoogleLogin}
-      />
+      <>
+        <AuthScreen
+          url={url}
+          language={language}
+          authMode={authMode}
+          authForm={authForm}
+          authLoading={authLoading}
+          authError={authError}
+          authOpen={isAuthOpen}
+          landingSection={landingSection}
+          latestSummaries={latestSummaries}
+          latestSummariesLoading={latestSummariesLoading}
+          onUrlChange={setUrl}
+          onLanguageChange={setLanguage}
+          onSelectSummary={setSelectedVideo}
+          onAuthModeChange={setAuthMode}
+          onAuthFormChange={setAuthForm}
+          onOpenAuth={openAuth}
+          onCloseAuth={closeAuth}
+          onLandingSectionChange={setLandingSection}
+          onGuestProcess={handleGuestProcess}
+          onAuthSubmit={handleAuthSubmit}
+          onGoogleLogin={handleGoogleLogin}
+        />
+
+        {selectedVideo && (
+          <VideoDetailModal
+            video={selectedVideo}
+            readOnly
+            onClose={() => setSelectedVideo(null)}
+            onRequireAuth={() => {
+              setSelectedVideo(null);
+              openAuth('login');
+              setAuthError('Login to copy or download summaries.');
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -485,10 +519,15 @@ function App() {
           <header className="content-topbar">
             <div>
               <span className="eyebrow">{activePanelMeta.eyebrow}</span>
-              <h1>{activePanelMeta.title}</h1>
+              {activePanelMeta.title ? <h1>{activePanelMeta.title}</h1> : null}
               {activePanelMeta.description ? <p>{activePanelMeta.description}</p> : null}
             </div>
-            <button className="ghost-btn icon-btn" onClick={clearAuth} aria-label="Logout" title="Logout">
+            <button
+              className="ghost-btn icon-btn"
+              onClick={() => setIsLogoutConfirmOpen(true)}
+              aria-label="Logout"
+              title="Logout"
+            >
               <LogOut size={16} />
             </button>
           </header>
@@ -565,10 +604,26 @@ function App() {
 
       <ConfirmationModal
         isOpen={Boolean(videoToDelete)}
-        title={videoToDelete?.title || ''}
+        heading="Confirm Deletion"
+        message="Delete this record permanently?"
+        detail={videoToDelete?.title || ''}
         onConfirm={() => void handleDelete()}
         onClose={() => setVideoToDelete(null)}
         isLoading={isDeleting}
+        confirmLabel="Delete"
+      />
+
+      <ConfirmationModal
+        isOpen={isLogoutConfirmOpen}
+        heading="Confirm Logout"
+        message="Are you sure you want to log out of your workspace?"
+        detail={currentUser.email}
+        onConfirm={handleLogout}
+        onClose={() => setIsLogoutConfirmOpen(false)}
+        confirmLabel="Logout"
+        confirmTitle="Logout"
+        confirmVariant="primary"
+        confirmIcon={<LogOut size={16} />}
       />
     </div>
   );
